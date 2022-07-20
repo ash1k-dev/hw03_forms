@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}
+  {{ group }}
+{% endblock %}
+{% block content %}
+  {% for post in posts %}
+  {% include 'posts/includes/post_card.html' %}
+  {% endfor %}
+{% endblock %}
