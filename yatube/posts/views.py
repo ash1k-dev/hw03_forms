@@ -27,9 +27,11 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts = Post.objects.filter(group=group).all()[:settings.COUNT_POSTS]
+    page_obj = get_page_context(posts, request)
     context = {
         'group': group,
         'posts': posts,
+        'page_obj': page_obj
     }
     return render(request, 'posts/group_list.html', context)
 
