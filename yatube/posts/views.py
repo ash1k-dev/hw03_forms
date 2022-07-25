@@ -15,9 +15,7 @@ def get_page_context(queryset, request):
 
 def index(request):
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_page_context(post_list, request)
     context = {
         'page_obj': page_obj,
     }
@@ -26,7 +24,8 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = Post.objects.filter(group=group).all()[:settings.COUNT_POSTS]
+    posts = group.posts.select_related().all()[:settings.COUNT_POSTS]
+    # posts = Post.objects.filter(group=group).all()[:settings.COUNT_POSTS]
     page_obj = get_page_context(posts, request)
     context = {
         'group': group,
@@ -38,9 +37,10 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    author_posts = author.posts.all()
+    author_posts = Post.objects.select_related('author').filter(
+        author__username=username)
     page_obj = get_page_context(author_posts, request)
-    posts_count = author.posts.count()
+    posts_count = author_posts.count()
     context = {
         'author': author,
         'posts': author_posts,
@@ -62,14 +62,12 @@ def post_detail(request, post_id):
 
 
 def post_create(request):
-    form_class = PostForm
-    form = form_class(request.POST)
-    if request.method == 'POST':
-        if form.is_valid():
-            form = form.save(commit=False)
-            form.author = request.user
-            form.save()
-            return redirect('posts:profile', request.user.username)
+    form = PostForm(request.POST or None)
+    if form.is_valid():
+        form = form.save(commit=False)
+        form.author = request.user
+        form.save()
+        return redirect('posts:profile', request.user.username)
 
     return render(request, 'posts/create.html', {'form': form})
 
